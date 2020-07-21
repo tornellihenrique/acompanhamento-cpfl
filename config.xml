@@ -7,8 +7,6 @@
     <author email="tornelli.henrique@gmail.com" href="https://www.linkedin.com/in/henrique-tornelli/">
         PhoneGap Team
     </author>
-    <content src="index.html" />
-    <access origin="*" />
 
     <platform name="ios">
         <icon src="res/icon/ios/icon-1024.png" width="1024" height="1024" />
@@ -99,4 +97,7 @@
                 <splash src="res/screen/windows/splashscreenphone.png" target="SplashScreenPhone"/>
             </platform>
              -->
+
+    <content src="index.html" />
+    <access origin="*" />
 </widget>
