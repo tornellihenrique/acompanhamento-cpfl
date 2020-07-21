@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1, shrink-to-fit=no'>
+
+    <link rel='stylesheet' href='css/bootstrap.min.css'>
+
+    <script src='js/jszip.js'></script>
+    <script src='js/xlsx.js'></script>
+</head>
+
+<body>
+    <div class='container-fluid py-3'>
+        <div class='custom-file mb-2'>
+            <input type='file' class='custom-file-input' id='file1'
+                accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+            <label class='custom-file-label' for='file1'>Arquivo 1</label>
+        </div>
+
+        <div class='custom-file mb-2'>
+            <input type='file' class='custom-file-input' id='file2'
+                accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+            <label class='custom-file-label' for='file2'>Arquivo 2</label>
+        </div>
+
+        <div class="mb-2">
+            <button onclick='generate()' class='btn btn-primary'>
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true" id="spinner"></span>
+                Gerar
+            </button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th scope="col">Nota</th>
+                        <th scope="col">Equipe</th>
+                        <th scope="col" style="cursor: pointer;" onclick="sort()">Status</th>
+                        <th scope="col">Endereço</th>
+                        <th scope="col">Serviço</th>
+                    </tr>
+                </thead>
+                <tbody id='tableContainer'>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src='js/jquery.slim.min.js'></script>
+    <script src='js/popper.min.js'></script>
+    <script src='js/bootstrap.min.js'></script>
+    <script>
+        $('#spinner').hide();
+
+        document.querySelector('#file1').addEventListener('change', function (e) {
+            if (e.target.files[0]) {
+                var fileName = e.target.files[0].name
+                var nextSibling = e.target.nextElementSibling
+                nextSibling.innerText = fileName
+            }
+        })
+
+        document.querySelector('#file2').addEventListener('change', function (e) {
+            if (e.target.files[0]) {
+                var fileName = e.target.files[0].name
+                var nextSibling = e.target.nextElementSibling
+                nextSibling.innerText = fileName
+            }
+        })
+
+        var table = []
+        var order = 0
+
+        function finalize(finalFiles) {
+            console.log(finalFiles)
+
+            var ccs = null
+            var cwsi = null
+
+            if (finalFiles[0] && finalFiles[0][0] && finalFiles[0][0]['Local']) {
+                ccs = finalFiles[0]
+                cwsi = finalFiles[1]
+            } else if (finalFiles[1] && finalFiles[1][0] && finalFiles[1][0]['Local']) {
+                ccs = finalFiles[1]
+                cwsi = finalFiles[0]
+            } else {
+                alert('Deu ruim')
+            }
+
+            for (var ccsFile of ccs) {
+                var cwsiFile = cwsi.find(val =>
+                    (val['STATUS'] === 'Deslocando' ||
+                        val['STATUS'] === 'Executando') &&
+                    val['NOTA'] === ccsFile['Nota'])
+
+                if (!cwsiFile) {
+                    continue;
+                }
+
+                table.push({
+                    nota: cwsiFile['NOTA'],
+                    equipe: cwsiFile['NRO_EQUIPE'],
+                    status: cwsiFile['STATUS'],
+                    endereco: `${ccsFile['Rua']} - ${ccsFile['Bairro']} - ${ccsFile['Local']}`,
+                    descricao: cwsiFile['DSC_SERVICO']
+                })
+            }
+
+            $('#spinner').hide();
+
+            renderTable()
+        }
+
+        function generate() {
+            clear()
+            table = []
+
+            var file1 = $('#file1').prop('files')[0]
+            var file2 = $('#file2').prop('files')[0]
+
+            if (!file1 || !file2) {
+                return;
+            }
+
+            $('#spinner').show();
+
+            readFile(file1)
+            readFile(file2)
+        }
+
+        function sort() {
+            if (order) {
+                order = 0
+
+                table.sort((a, b) => {
+                    if (a.status > b.status) {
+                        return -1;
+                    }
+                    if (a.status < b.status) {
+                        return 1;
+                    }
+
+                    return 0;
+                })
+            } else {
+                order = 1
+
+                table.sort((a, b) => {
+                    if (a.status > b.status) {
+                        return 1;
+                    }
+                    if (a.status < b.status) {
+                        return -1;
+                    }
+
+                    return 0;
+                })
+            }
+
+            renderTable()
+        }
+
+        function renderTable() {
+            clear()
+
+            console.log(table)
+
+            for (var line of table) {
+                $("#tableContainer").append(
+                    "<tr><td>" +
+                    line.nota + "</td><td>" +
+                    line.equipe + "</td><td>" +
+                    line.status + "</td><td>" +
+                    line.endereco + "</td><td>" +
+                    line.descricao + "</td></tr>"
+                );
+            }
+        }
+
+        function readFile(file) {
+            finalFiles = []
+
+            var reader = new FileReader()
+
+            reader.onload = function (e) {
+                var data = e.target.result
+                var workbook = XLSX.read(data, {
+                    type: 'binary'
+                })
+
+                workbook.SheetNames.forEach(function (sheetName) {
+                    finalFiles.push(XLSX.utils.sheet_to_row_object_array(workbook.Sheets[sheetName]))
+
+                    if (finalFiles.length == 2) {
+                        finalize(finalFiles);
+                    }
+                })
+            }
+
+            reader.readAsBinaryString(file)
+        }
+
+        function clear() {
+            $('#tableContainer').empty()
+        }
+    </script>
+</body>
+
+</html>
