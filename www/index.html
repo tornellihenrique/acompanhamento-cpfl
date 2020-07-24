@@ -42,7 +42,6 @@
                         <th scope="col">Equipe</th>
                         <th scope="col" style="cursor: pointer;" onclick="sort()">Status</th>
                         <th scope="col">Endereço</th>
-                        <th scope="col">Serviço</th>
                     </tr>
                 </thead>
                 <tbody id='tableContainer'>
@@ -82,32 +81,37 @@
             var ccs = null
             var cwsi = null
 
-            if (finalFiles[0] && finalFiles[0][0] && finalFiles[0][0]['Local']) {
+            if (finalFiles[0] && finalFiles[0][0] && finalFiles[0][0]['Local'] &&
+                finalFiles[1] && finalFiles[1][0] && finalFiles[1][0]['NOM_MUNIC']) {
                 ccs = finalFiles[0]
                 cwsi = finalFiles[1]
-            } else if (finalFiles[1] && finalFiles[1][0] && finalFiles[1][0]['Local']) {
+            } else if (finalFiles[1] && finalFiles[1][0] && finalFiles[1][0]['Local'] &&
+                finalFiles[0] && finalFiles[0][0] && finalFiles[0][0]['NOM_MUNIC']) {
                 ccs = finalFiles[1]
                 cwsi = finalFiles[0]
             } else {
+                $('#spinner').hide();
                 alert('Deu ruim')
+
+                return;
             }
 
             for (var ccsFile of ccs) {
-                var cwsiFile = cwsi.find(val =>
-                    (val['STATUS'] === 'Deslocando' ||
-                        val['STATUS'] === 'Executando') &&
-                    val['NOTA'] === ccsFile['Nota'])
+                var cwsiFile = cwsi.find(
+                    val =>
+                        (val['STATUS_MOB'] === 'DESLOCANDO' || val['STATUS_MOB'] === 'EXECUTANDO') &&
+                        Number(val['NOTA_SERVICO']) === Number(ccsFile['Nota']),
+                )
 
                 if (!cwsiFile) {
                     continue;
                 }
 
                 table.push({
-                    nota: cwsiFile['NOTA'],
-                    equipe: cwsiFile['NRO_EQUIPE'],
-                    status: cwsiFile['STATUS'],
-                    endereco: `${ccsFile['Rua']} - ${ccsFile['Bairro']} - ${ccsFile['Local']}`,
-                    descricao: cwsiFile['DSC_SERVICO']
+                    nota: cwsiFile['NOTA_SERVICO'],
+                    equipe: cwsiFile['EQUIP'],
+                    status: cwsiFile['STATUS_MOB'],
+                    endereco: `${ccsFile['Rua']} - ${ccsFile['Bairro']} - ${ccsFile['Local']}`
                 })
             }
 
@@ -176,8 +180,7 @@
                     line.nota + "</td><td>" +
                     line.equipe + "</td><td>" +
                     line.status + "</td><td>" +
-                    line.endereco + "</td><td>" +
-                    line.descricao + "</td></tr>"
+                    line.endereco + "</td><td>"
                 );
             }
         }
